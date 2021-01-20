@@ -94,7 +94,7 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64
         push: true
-        tags: ${{ steps.prep.outputs.tags }}
+        tags: cageyv/telegramexchangeratesbot:latest
         labels: |
           org.opencontainers.image.title=${{ fromJson(steps.repo.outputs.result).name }}
           org.opencontainers.image.description=${{ fromJson(steps.repo.outputs.result).description }}
