@@ -40,9 +40,7 @@ def help_callback(
     }
 
     text_to += "\n\n"
-    text_to += (
-        "🍕🍺 [patreon.com/ExchangeRatesBot](https://www.patreon.com/ExchangeRatesBot)"
-    )
+    text_to += "Bot is free and online since 01 July 2015 /donate"
 
     update.message.reply_text(
         disable_web_page_preview=True, parse_mode=ParseMode.MARKDOWN, text=text_to

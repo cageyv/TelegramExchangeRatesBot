@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import Tuple
@@ -11,33 +10,35 @@ from app.exchanges.base import ECurrency, Exchange, Pair, PairData
 from app.exchanges.exceptions import APIErrorException, PairNotExistsException
 
 
-class SpTodayExchange(Exchange):
+class SatangExchange(Exchange):
     """
-    https://www.sp-today.com
+    https://docs.satang.pro/apis
     """
 
-    name = "sp-today"
+    name = "[satang.pro](https://satang.pro/signup?referral=STZ3EEU2)"
 
     @cached_property
     def _get_data(self) -> dict:
         try:
-            response = requests.get("https://sp-today.com/app_api/cur_aleppo.json")
+            response = requests.get("https://api.tdax.com/api/orderbook-tickers/")
             response.raise_for_status()
             data = response.json()
         except (requests.exceptions.RequestException, ValueError) as e:
             raise APIErrorException(e)
 
         try:
+            # TODO: [bid][price] [ask][price]
             schema = {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string"},
-                        "bid": {"type": "string"},
-                        "ask": {"type": "string"},
+                "type": "object",
+                "patternProperties": {
+                    r"^.*_.*$": {
+                        "type": "object",
+                        "properties": {
+                            "bid": {"type": "object"},
+                            "ask": {"type": "object"},
+                        },
+                        "required": ["bid", "ask"],
                     },
-                    "required": ["name", "bid", "ask"],
                 },
             }
             validate(data, schema)
@@ -45,8 +46,10 @@ class SpTodayExchange(Exchange):
             raise APIErrorException(e)
 
         result = {}
-        for x in data:
-            result[Pair(ECurrency(x["name"]), ECurrency("SYP"))] = x
+        for currencies, info in data.items():
+            from_currency, to_currency = currencies.split("_")
+
+            result[Pair(ECurrency(from_currency), ECurrency(to_currency))] = info
 
         return result
 
@@ -70,6 +73,17 @@ class SpTodayExchange(Exchange):
 
         pair_data = self._get_data[pair]
 
-        mid = (Decimal(pair_data["ask"]) + Decimal(pair_data["bid"])) / Decimal("2")
+        mid = (
+            Decimal(str(pair_data["ask"]["price"]))
+            + Decimal(str(pair_data["bid"]["price"]))
+        ) / Decimal("2")
 
-        return PairData(pair=pair, rate=mid, last_trade_at=datetime.utcnow())
+        low24h = high24h = None
+
+        return PairData(
+            pair=pair,
+            rate=mid,
+            low24h=low24h,
+            high24h=high24h,
+            last_trade_at=datetime.utcnow(),
+        )
